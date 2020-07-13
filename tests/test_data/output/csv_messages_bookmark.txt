@@ -1,0 +1,5 @@
+{"type": "SCHEMA", "stream": "dogs.csv", "schema": {"$schema": "http://json-schema.org/draft/2019-09/schema#", "type": "object", "properties": {"_source": {"type": "string"}, "id": {"type": "string"}, "name": {"type": "string"}, "species": {"type": "string"}, "color": {"type": "string"}, "birth_date": {"type": "string"}}, "required": ["_source", "id", "name", "species", "color", "birth_date"]}, "key_properties": ["id"], "bookmark_properties": ["birth_date"], "metadata": {}}
+{"type": "BOOKMARK", "stream": "dogs.csv", "bookmark": {"birth_date": "2020-01-02"}}
+{"type": "RECORD", "stream": "dogs.csv", "record": {"_source": "input/dogs2.csv", "id": "3", "name": "Minnie", "species": "Shih tzu", "color": "white", "birth_date": "2020-01-03"}}
+{"type": "RECORD", "stream": "dogs.csv", "record": {"_source": "input/dogs2.csv", "id": "4", "name": "Buck", "species": "Golden Retriever", "color": "gold", "birth_date": "2020-01-04"}}
+{"type": "BOOKMARK", "stream": "dogs.csv", "bookmark": {"birth_date": "2020-01-04"}}

@@ -1,0 +1,5 @@
+_source,id,name,species,color,birth_date
+input/dogs1.csv,1,Benji,Maltipoo,white,2020-01-01
+input/dogs1.csv,2,Raggles,Mutt,brown,2020-01-02
+input/dogs2.csv,3,Minnie,Shih tzu,white,2020-01-03
+input/dogs2.csv,4,Buck,Golden Retriever,gold,2020-01-04
