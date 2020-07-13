@@ -1,8 +1,8 @@
-{"type": "SCHEMA", "stream": "dogs1.csv", "schema": {"$schema": "http://json-schema.org/draft/2019-09/schema#", "type": "object", "properties": {"line": {"type": "string"}}, "required": ["line"]}, "key_properties": [], "bookmark_properties": [], "metadata": {"source": "input/dogs1.csv"}}
-{"type": "RECORD", "stream": "dogs1.csv", "record": {"line": "id,name,species,color,birth_date"}}
-{"type": "RECORD", "stream": "dogs1.csv", "record": {"line": "1,Benji,Maltipoo,white,2020-01-01"}}
-{"type": "RECORD", "stream": "dogs1.csv", "record": {"line": "2,Raggles,Mutt,brown,2020-01-02"}}
-{"type": "SCHEMA", "stream": "dogs2.csv", "schema": {"$schema": "http://json-schema.org/draft/2019-09/schema#", "type": "object", "properties": {"line": {"type": "string"}}, "required": ["line"]}, "key_properties": [], "bookmark_properties": [], "metadata": {"source": "input/dogs2.csv"}}
-{"type": "RECORD", "stream": "dogs2.csv", "record": {"line": "id,name,species,color,birth_date"}}
-{"type": "RECORD", "stream": "dogs2.csv", "record": {"line": "3,Minnie,Shih tzu,white,2020-01-03"}}
-{"type": "RECORD", "stream": "dogs2.csv", "record": {"line": "4,Buck,Golden Retriever,gold,2020-01-04"}}
+{"type": "SCHEMA", "source": "input", "stream": "dogs1.csv", "schema": {"$schema": "http://json-schema.org/draft/2019-09/schema#", "type": "object", "properties": {"line": {"type": "string"}}, "required": ["line"]}, "key_properties": [], "bookmark_properties": [], "metadata": {"source": "input/dogs1.csv"}}
+{"type": "RECORD", "record": {"line": "id,name,species,color,birth_date"}}
+{"type": "RECORD", "record": {"line": "1,Benji,Maltipoo,white,2020-01-01"}}
+{"type": "RECORD", "record": {"line": "2,Raggles,Mutt,brown,2020-01-02"}}
+{"type": "SCHEMA", "source": "input", "stream": "dogs2.csv", "schema": {"$schema": "http://json-schema.org/draft/2019-09/schema#", "type": "object", "properties": {"line": {"type": "string"}}, "required": ["line"]}, "key_properties": [], "bookmark_properties": [], "metadata": {"source": "input/dogs2.csv"}}
+{"type": "RECORD", "record": {"line": "id,name,species,color,birth_date"}}
+{"type": "RECORD", "record": {"line": "3,Minnie,Shih tzu,white,2020-01-03"}}
+{"type": "RECORD", "record": {"line": "4,Buck,Golden Retriever,gold,2020-01-04"}}

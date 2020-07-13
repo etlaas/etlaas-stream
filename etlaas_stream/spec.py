@@ -18,6 +18,7 @@ class Message:
 
 @dataclass
 class SchemaMessage(Message):
+    source: str
     stream: str
     schema: Dict[str, Any]
     key_properties: List[str]
@@ -26,6 +27,7 @@ class SchemaMessage(Message):
 
     def __init__(
         self,
+        source: str,
         stream: str,
         schema: Dict[str, Any],
         key_properties: List[str],
@@ -33,6 +35,7 @@ class SchemaMessage(Message):
         metadata: Dict[str, Any]
     ) -> None:
         self.type = MessageType.SCHEMA
+        self.source = source
         self.stream = stream
         self.schema = schema
         self.key_properties = key_properties
@@ -42,21 +45,17 @@ class SchemaMessage(Message):
 
 @dataclass
 class RecordMessage(Message):
-    stream: str
     record: Dict[str, Any]
 
-    def __init__(self, stream: str, record: Dict[str, Any]):
+    def __init__(self, record: Dict[str, Any]):
         self.type = MessageType.RECORD
-        self.stream = stream
         self.record = record
 
 
 @dataclass
 class BookmarkMessage(Message):
-    stream: str
     bookmark: Any
 
-    def __init__(self, stream: str, bookmark: Dict[str, Any]):
+    def __init__(self, bookmark: Dict[str, Any]):
         self.type = MessageType.BOOKMARK
-        self.stream = stream
         self.bookmark = bookmark

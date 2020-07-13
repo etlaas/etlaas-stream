@@ -26,7 +26,7 @@ class LineSource(Source):
         for file in self.file_dir.glob('*.csv'):
             metadata = {'source': f'{self.file_dir.name}/{file.name}'}
             self.update_schema(
-                stream_name=file.name,
+                stream=file.name,
                 metadata=metadata)
             self.write_schema()
             if self.file_handle is not None:
@@ -40,8 +40,8 @@ class LineSource(Source):
 
 
 class CsvSource(Source):
-    def __init__(self, stream_name: str, file_dir: Path, **kwargs):
-        super().__init__(stream_name=stream_name, **kwargs)
+    def __init__(self, name: str, stream: str, file_dir: Path, **kwargs):
+        super().__init__(name=name, stream=stream, **kwargs)
         self.file_dir = file_dir
 
         self.file_handle: Optional[TextIO] = None
@@ -111,7 +111,7 @@ class CsvSink(Sink):
         for msg in self.read():
             if isinstance(msg, SchemaMessage):
                 assert self.writer is None, 'writer already initialized'
-                self.file_handle = Path(self.temp_dir, self.stream_name).open('w', newline='')
+                self.file_handle = Path(self.temp_dir, self.stream).open('w', newline='')
                 properties = self.schema.get('properties', {}).keys()
                 assert properties, 'schema properties must be defined'
                 self.writer = csv.DictWriter(self.file_handle, fieldnames=properties)
@@ -126,10 +126,12 @@ class CsvSink(Sink):
 def test_line_stream(tmpdir):
     pipe = io.StringIO()
     source = LineSource(
+        name='input',
         file_dir=TEST_DATA_DIR / 'input',
         output_pipe=pipe)
 
     sink = LineSink(
+        name='output',
         temp_dir=tmpdir,
         input_pipe=pipe)
 
@@ -152,13 +154,15 @@ def test_line_stream(tmpdir):
 def test_csv_stream(tmpdir):
     pipe = io.StringIO()
     source = CsvSource(
-        stream_name='dogs.csv',
+        name='input',
+        stream='dogs.csv',
         file_dir=TEST_DATA_DIR / 'input',
         key_properties=['id'],
         bookmark_properties=['birth_date'],
         output_pipe=pipe)
 
     sink = CsvSink(
+        name='output',
         temp_dir=tmpdir,
         input_pipe=pipe)
 
@@ -181,14 +185,16 @@ def test_csv_stream(tmpdir):
 def test_csv_stream_bookmark(tmpdir):
     pipe = io.StringIO()
     source = CsvSource(
+        name='input',
         bookmark={'birth_date': '2020-01-02'},
-        stream_name='dogs.csv',
+        stream='dogs.csv',
         file_dir=TEST_DATA_DIR / 'input',
         key_properties=['id'],
         bookmark_properties=['birth_date'],
         output_pipe=pipe)
 
     sink = CsvSink(
+        name='output',
         temp_dir=tmpdir,
         input_pipe=pipe)
 

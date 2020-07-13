@@ -19,8 +19,9 @@ DEFAULT_SCHEMA = {
 class Source:
     def __init__(
             self,
+            name: str,
             bookmark: Optional[Dict[str, Any]] = None,
-            stream_name: Optional[str] = None,
+            stream: Optional[str] = None,
             schema: Optional[Dict[str, Any]] = None,
             key_properties: Optional[List[str]] = None,
             bookmark_properties: Optional[List[str]] = None,
@@ -29,8 +30,9 @@ class Source:
             loads: Callable[[str], Any] = default_loads,
             dumps: Callable[[Any], str] = default_dumps
     ) -> None:
+        self.name = name
         self.bookmark = bookmark or {}
-        self.stream_name = stream_name
+        self.stream = stream
         self.schema = schema or DEFAULT_SCHEMA
         self.key_properties = key_properties or []
         self.bookmark_properties = bookmark_properties or []
@@ -54,22 +56,23 @@ class Source:
 
     def update_schema(
             self,
-            stream_name: Optional[str] = None,
+            stream: Optional[str] = None,
             schema: Optional[Dict[str, Any]] = None,
             key_properties: Optional[List[str]] = None,
             bookmark_properties: Optional[List[str]] = None,
             metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        self.stream_name = stream_name or self.stream_name
+        self.stream = stream or self.stream
         self.schema = schema or self.schema
         self.key_properties = key_properties or self.key_properties
         self.bookmark_properties = bookmark_properties or self.bookmark_properties
         self.metadata = metadata or self.metadata
 
     def write_schema(self) -> None:
-        assert self.stream_name is not None, 'stream_name is undefined'
+        assert self.stream is not None, 'stream_name is undefined'
         msg = SchemaMessage(
-            stream=self.stream_name,
+            source=self.name,
+            stream=self.stream,
             schema=self.schema,
             key_properties=self.key_properties,
             bookmark_properties=self.bookmark_properties,
@@ -79,14 +82,12 @@ class Source:
         self.record_count = 0
 
     def write_record(self, record: Dict[str, Any]) -> None:
-        assert self.stream_name is not None, 'stream_name is not defined'
-        msg = RecordMessage(stream=self.stream_name, record=record)
+        msg = RecordMessage(record=record)
         logging.debug(f'writing record {msg}')
         self._write(msg)
         self.record_count += 1
 
     def write_bookmark(self) -> None:
-        assert self.stream_name is not None
-        msg = BookmarkMessage(stream=self.stream_name, bookmark=self.bookmark)
+        msg = BookmarkMessage(bookmark=self.bookmark)
         logging.info(f'writing bookmark {msg}')
         self._write(msg)

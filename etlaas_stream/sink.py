@@ -16,15 +16,18 @@ from .spec import (
 class Sink:
     def __init__(
             self,
+            name: str,
             input_pipe: Optional[TextIO] = None,
             loads: Callable[[str], Any] = default_loads,
             dumps: Callable[[Any], str] = default_dumps
     ) -> None:
+        self.name = name
         self.input_pipe = input_pipe or sys.stdin
         self.loads = loads
         self.dumps = dumps
 
-        self.stream_name: Optional[str] = None
+        self.source: Optional[str] = None
+        self.stream: Optional[str] = None
         self.schema: Dict[str, Any] = {}
         self.validate: Optional[Callable[[Any], None]] = None
         self.key_properties: List[str] = []
@@ -34,7 +37,6 @@ class Sink:
         self.record_count = 0
 
     def get_bookmark(self, bookmark_property: str) -> Any:
-        assert self.stream_name is not None, 'stream_name is undefined'
         assert bookmark_property in self.bookmark_properties, f'{bookmark_property} not in bookmarks_properties'
         return self.bookmark.get(bookmark_property)
 
@@ -44,6 +46,7 @@ class Sink:
             msg_type = data.pop('type')
             if msg_type == MessageType.SCHEMA:
                 return SchemaMessage(
+                    source=data['source'],
                     stream=data['stream'],
                     schema=data['schema'],
                     key_properties=data['key_properties'],
@@ -51,11 +54,9 @@ class Sink:
                     metadata=data['metadata'])
             elif msg_type == MessageType.RECORD:
                 return RecordMessage(
-                    stream=data['stream'],
                     record=data['record'])
             elif msg_type == MessageType.BOOKMARK:
                 return BookmarkMessage(
-                    stream=data['stream'],
                     bookmark=data['bookmark'])
             else:
                 raise ValueError(f'Cannot read message: {data}')
@@ -71,17 +72,17 @@ class Sink:
             else:
                 msg = self.deserialize_message(line)
                 if isinstance(msg, SchemaMessage):
-                    self.stream_name = msg.stream
+                    self.source = msg.source
+                    self.stream = msg.stream
                     self.schema = msg.schema
                     self.validate = fastjsonschema.compile(msg.schema)
                     self.key_properties = msg.key_properties
                     self.bookmark_properties = msg.bookmark_properties
                     self.metadata = msg.metadata
                 elif isinstance(msg, RecordMessage):
-                    assert self.stream_name is not None, 'stream_name is not initialized'
+                    assert self.source is not None, 'source is not initialized'
+                    assert self.stream is not None, 'stream is not initialized'
                     assert self.validate is not None, 'validate is not initialized'
-                    assert self.stream_name == msg.stream,\
-                        f'record stream does not match schema: {msg.stream} != {self.stream_name}'
                     try:
                         self.validate(msg.record)
                     except Exception as exn:
@@ -89,7 +90,8 @@ class Sink:
                         raise exn
                     self.record_count += 1
                 elif isinstance(msg, BookmarkMessage):
-                    assert self.stream_name is not None, 'stream_name is not initialized'
+                    assert self.source is not None, 'source is not initialized'
+                    assert self.stream is not None, 'stream is not initialized'
                     self.bookmark = msg.bookmark
                 logging.debug(f'received message: {msg}')
                 yield msg
