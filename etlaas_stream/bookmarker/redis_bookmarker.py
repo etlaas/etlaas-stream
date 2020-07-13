@@ -1,31 +1,25 @@
 import redis
-from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Callable, Any, Optional
 
 from .bookmarker import Bookmarker
 from ..infrastructure import default_dumps, default_loads
 
 
-@dataclass
-class RedisConfig:
-    host: str
-    port: int
-    password: str
-    database: int
-
-
 class RedisBookmarker(Bookmarker):
     def __init__(
         self,
-        config: RedisConfig,
+        host: str = 'localhost',
+        port: int = 6379,
+        password: Optional[str] = None,
+        database: int = 0,
         loads: Callable[[str], Any] = default_loads,
         dumps: Callable[[Any], str] = default_dumps
     ) -> None:
         self.redis = redis.Redis(
-            host=config.host,
-            port=config.port,
-            db=config.database,
-            password=config.password)
+            host=host,
+            port=port,
+            db=database,
+            password=password)
         self.loads = loads
         self.dumps = dumps
 

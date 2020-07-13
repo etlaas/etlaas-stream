@@ -4,7 +4,7 @@ from .spec import (
     RecordMessage,
     BookmarkMessage
 )
-from .bookmarker import Bookmarker, RedisConfig, RedisBookmarker
+from .bookmarker import Bookmarker, RedisBookmarker
 from .source import Source
 from .sink import Sink
 __all__ = [
@@ -15,6 +15,5 @@ __all__ = [
     'Source',
     'Sink',
     'Bookmarker',
-    'RedisBookmarker',
-    'RedisConfig'
+    'RedisBookmarker'
 ]
