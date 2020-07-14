@@ -14,10 +14,9 @@ jobs:
       - name: Setup
         run: |
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-          source $HOME/.poetry/env
-          poetry install
+          echo "::add-path::$HOME/.poetry/env"
       - name: Run tests
         run: |
-          source $HOME/.poetry/env
+          poetry install
           poetry run mypy . --strict
           poetry run pytest -v tests
