@@ -14,7 +14,7 @@ jobs:
       - name: Setup
         run: |
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-          echo "::add-path::$HOME/.poetry/env"
+          echo "::add-path::$HOME/.poetry/bin"
       - name: Run tests
         run: |
           poetry install
