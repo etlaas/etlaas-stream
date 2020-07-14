@@ -25,8 +25,8 @@ class RedisBookmarker(Bookmarker):
 
     def get_bookmark(self, source: str, stream: str, sink: str) -> Any:
         key = f'{source}:{stream}:{sink}'
-        data = self.redis.get(key)
-        return self.loads(data)
+        if (data := self.redis.get(key)) is not None:
+            return self.loads(data)
 
     def set_bookmark(self, source: str, stream: str, sink: str, value: Any) -> None:
         key = f'{source}:{stream}:{sink}'
