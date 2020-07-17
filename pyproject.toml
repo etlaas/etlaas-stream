@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "etlaas-stream"
-version = "20.7.3"
+version = "20.7.4"
 description = "Convenience classes for working with data streams."
 authors = ["Andrew Meier <ameier38@gmail.com>"]
 license = "MIT"
