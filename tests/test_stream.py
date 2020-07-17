@@ -1,5 +1,6 @@
 import csv
 import io
+import pytest
 from etlaas_stream import Source, Sink, SchemaMessage, RecordMessage, LineMessage
 from pathlib import Path
 from typing import Optional, TextIO
@@ -207,3 +208,19 @@ def test_csv_stream_bookmark(tmpdir):
     actual_rows = Path(tmpdir, 'dogs.csv').read_text()
 
     assert actual_rows == expected_rows
+
+
+def test_csv_stream_error(tmpdir):
+    pipe = io.StringIO()
+    with Path(TEST_DATA_DIR, 'input', 'error_messages.txt').open('r') as fr:
+        data = fr.read()
+        pipe.write(data)
+    pipe.seek(0)
+
+    sink = LineSink(
+        name='output',
+        temp_dir=tmpdir,
+        input_pipe=pipe)
+
+    with pytest.raises(RuntimeError):
+        sink.start()

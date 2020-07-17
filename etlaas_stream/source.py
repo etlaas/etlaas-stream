@@ -8,6 +8,7 @@ from .spec import (
     RecordMessage,
     LineMessage,
     BookmarkMessage,
+    ErrorMessage,
     Message
 )
 
@@ -93,4 +94,9 @@ class Source:
     def write_bookmark(self) -> None:
         msg = BookmarkMessage(bookmark=self.bookmark)
         logging.info(f'writing bookmark {msg}')
+        self._write(msg)
+
+    def write_error(self, error: str) -> None:
+        msg = ErrorMessage(error=error)
+        logging.info(f'writing error {msg}')
         self._write(msg)
