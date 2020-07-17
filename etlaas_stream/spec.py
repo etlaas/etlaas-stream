@@ -5,6 +5,7 @@ from typing import Dict, List, Any
 class MessageType:
     SCHEMA = 'SCHEMA'
     RECORD = 'RECORD'
+    LINE = 'LINE'
     BOOKMARK = 'BOOKMARK'
 
 
@@ -50,6 +51,15 @@ class RecordMessage(Message):
     def __init__(self, record: Dict[str, Any]):
         self.type = MessageType.RECORD
         self.record = record
+
+
+@dataclass
+class LineMessage(Message):
+    line: str
+
+    def __init__(self, line: str):
+        self.type = MessageType.LINE
+        self.line = line
 
 
 @dataclass

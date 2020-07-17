@@ -6,6 +6,7 @@ from .infrastructure import default_loads, default_dumps
 from .spec import (
     SchemaMessage,
     RecordMessage,
+    LineMessage,
     BookmarkMessage,
     Message
 )
@@ -40,7 +41,6 @@ class Source:
         self.output_pipe = output_pipe or sys.stdout
         self.loads = loads
         self.dumps = dumps
-        self.record_count: int = 0
 
     def _write(self, msg: Message) -> None:
         data = self.dumps(msg.to_dict()) + '\n'
@@ -79,13 +79,16 @@ class Source:
             metadata=self.metadata)
         logging.info(f'writing schema {msg}')
         self._write(msg)
-        self.record_count = 0
 
     def write_record(self, record: Dict[str, Any]) -> None:
         msg = RecordMessage(record=record)
         logging.debug(f'writing record {msg}')
         self._write(msg)
-        self.record_count += 1
+
+    def write_line(self, line: str) -> None:
+        msg = LineMessage(line=line)
+        logging.debug(f'writing line: {msg}')
+        self._write(msg)
 
     def write_bookmark(self) -> None:
         msg = BookmarkMessage(bookmark=self.bookmark)

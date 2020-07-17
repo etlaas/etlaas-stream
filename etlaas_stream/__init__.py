@@ -2,6 +2,7 @@ from .spec import (
     Message,
     SchemaMessage,
     RecordMessage,
+    LineMessage,
     BookmarkMessage
 )
 from .bookmarker import Bookmarker, RedisBookmarker
@@ -11,6 +12,7 @@ __all__ = [
     'Message',
     'SchemaMessage',
     'RecordMessage',
+    'LineMessage',
     'BookmarkMessage',
     'Source',
     'Sink',

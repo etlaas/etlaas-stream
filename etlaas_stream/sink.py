@@ -8,6 +8,7 @@ from .spec import (
     MessageType,
     SchemaMessage,
     RecordMessage,
+    LineMessage,
     BookmarkMessage,
     Message
 )
@@ -34,7 +35,6 @@ class Sink:
         self.bookmark_properties: List[str] = []
         self.metadata: Dict[str, Any] = {}
         self.bookmark: Dict[str, Any] = {}
-        self.record_count = 0
 
     def get_bookmark(self, bookmark_property: str) -> Any:
         assert bookmark_property in self.bookmark_properties, f'{bookmark_property} not in bookmarks_properties'
@@ -55,6 +55,9 @@ class Sink:
             elif msg_type == MessageType.RECORD:
                 return RecordMessage(
                     record=data['record'])
+            elif msg_type == MessageType.LINE:
+                return LineMessage(
+                    line=data['line'])
             elif msg_type == MessageType.BOOKMARK:
                 return BookmarkMessage(
                     bookmark=data['bookmark'])
@@ -88,7 +91,9 @@ class Sink:
                     except Exception as exn:
                         logging.error(f'validation failed for {msg.record}')
                         raise exn
-                    self.record_count += 1
+                elif isinstance(msg, LineMessage):
+                    assert self.source is not None, 'source is not initialized'
+                    assert self.stream is not None, 'stream is not initialized'
                 elif isinstance(msg, BookmarkMessage):
                     assert self.source is not None, 'source is not initialized'
                     assert self.stream is not None, 'stream is not initialized'

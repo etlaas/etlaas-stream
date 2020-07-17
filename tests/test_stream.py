@@ -1,6 +1,6 @@
 import csv
 import io
-from etlaas_stream import Source, Sink, SchemaMessage, RecordMessage
+from etlaas_stream import Source, Sink, SchemaMessage, RecordMessage, LineMessage
 from pathlib import Path
 from typing import Optional, TextIO
 
@@ -9,15 +9,8 @@ TEST_DATA_DIR = Path(__file__).parent / 'test_data'
 
 
 class LineSource(Source):
-    SCHEMA = {
-        '$schema': 'http://json-schema.org/draft/2019-09/schema#',
-        'type': 'object',
-        'properties': {'line': {'type': 'string'}},
-        'required': ['line']
-    }
-
     def __init__(self, file_dir: Path, **kwargs):
-        super().__init__(schema=self.SCHEMA, **kwargs)
+        super().__init__(**kwargs)
         self.file_dir = file_dir
 
         self.file_handle: Optional[TextIO] = None
@@ -34,7 +27,7 @@ class LineSource(Source):
                     self.file_handle.close()
             self.file_handle = file.open('r')
             for line in self.file_handle:
-                self.write_record({'line': line.strip()})
+                self.write_line(line=line.strip())
             if not self.file_handle.closed:
                 self.file_handle.close()
 
@@ -91,10 +84,10 @@ class LineSink(Sink):
                     self.file_handle.close()
                 self.file_handle = Path(self.temp_dir, msg.stream).open('w')
             elif isinstance(msg, RecordMessage):
+                raise ValueError(f'can only process LINE messages')
+            elif isinstance(msg, LineMessage):
                 assert self.file_handle is not None, 'file_handle is not initialized'
-                assert 'line' in msg.record, 'line not found in record'
-                line = msg.record['line']
-                self.file_handle.write(line + '\n')
+                self.file_handle.write(msg.line + '\n')
         if not self.file_handle.closed:
             self.file_handle.close()
 
