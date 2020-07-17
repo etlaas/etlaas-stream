@@ -10,6 +10,7 @@ from .spec import (
     RecordMessage,
     LineMessage,
     BookmarkMessage,
+    ErrorMessage,
     Message
 )
 
@@ -53,14 +54,13 @@ class Sink:
                     bookmark_properties=data['bookmark_properties'],
                     metadata=data['metadata'])
             elif msg_type == MessageType.RECORD:
-                return RecordMessage(
-                    record=data['record'])
+                return RecordMessage(record=data['record'])
             elif msg_type == MessageType.LINE:
-                return LineMessage(
-                    line=data['line'])
+                return LineMessage(line=data['line'])
             elif msg_type == MessageType.BOOKMARK:
-                return BookmarkMessage(
-                    bookmark=data['bookmark'])
+                return BookmarkMessage(bookmark=data['bookmark'])
+            elif msg_type == MessageType.ERROR:
+                return ErrorMessage(error=data['error'])
             else:
                 raise ValueError(f'Cannot read message: {data}')
         except Exception as exn:
@@ -98,5 +98,8 @@ class Sink:
                     assert self.source is not None, 'source is not initialized'
                     assert self.stream is not None, 'stream is not initialized'
                     self.bookmark = msg.bookmark
+                elif isinstance(msg, ErrorMessage):
+                    logging.error(msg.error)
+                    raise RuntimeError(msg.error)
                 logging.debug(f'received message: {msg}')
                 yield msg

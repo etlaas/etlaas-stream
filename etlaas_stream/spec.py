@@ -7,6 +7,7 @@ class MessageType:
     RECORD = 'RECORD'
     LINE = 'LINE'
     BOOKMARK = 'BOOKMARK'
+    ERROR = 'ERROR'
 
 
 @dataclass
@@ -69,3 +70,12 @@ class BookmarkMessage(Message):
     def __init__(self, bookmark: Dict[str, Any]):
         self.type = MessageType.BOOKMARK
         self.bookmark = bookmark
+
+
+@dataclass
+class ErrorMessage(Message):
+    error: str
+
+    def __init__(self, error: str):
+        self.type = MessageType.ERROR
+        self.error = error
