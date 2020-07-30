@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 from .bookmarker import Bookmarker
 from ..infrastructure import default_dumps, default_loads
@@ -12,7 +12,7 @@ class MemoryBookmarker(Bookmarker):
     ) -> None:
         self._loads = loads
         self._dumps = dumps
-        self._bookmarks = {}
+        self._bookmarks: Dict[str, Any] = {}
 
     def get_bookmark(self, key: str) -> Any:
         data = self._bookmarks.get(key)
