@@ -7,10 +7,10 @@ def test_bookmarker():
     sink = 'output'
 
     bookmarker = MemoryBookmarker()
-    bookmark = {'a': 1, 'b': 2}
-    key = bookmarker.create_key(source, sink, stream)
-    bookmarker.set_bookmark(key=key, value=bookmark)
+    key = bookmarker.get_key(source, stream, sink)
+    expected_bookmarks = {'a': 1, 'b': 2}
+    bookmarker.set_bookmarks(key=key, bookmarks=expected_bookmarks)
 
-    retrieved_bookmark = bookmarker.get_bookmark(key=key)
+    actual_bookmarks = bookmarker.get_bookmarks(key=key)
 
-    assert retrieved_bookmark == bookmark
+    assert actual_bookmarks == expected_bookmarks

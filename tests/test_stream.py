@@ -18,26 +18,25 @@ class LineSource(Source):
 
     def __init__(
             self,
-            name: str,
             sink: str,
             bookmarker: Bookmarker,
             file_dir: Path,
             **kwargs: Any
     ) -> None:
-        super().__init__(name=name, bookmark_properties=['_last_modified_at'], **kwargs)
-        self.name = name
+        super().__init__(bookmark_properties=['_last_modified_at'], **kwargs)
         self.sink = sink
         self.bookmarker = bookmarker
         self.file_dir = file_dir
         self.file_handle: Optional[TextIO] = None
 
     def start(self) -> None:
-        bookmark_key = self.bookmarker.create_key(self.name, self.sink)
-        initial_bookmark: Optional[datetime] = self.bookmarker.get_bookmark(bookmark_key)
+        bookmarks_key = self.bookmarker.get_key(source=self.name, stream=self.stream, sink=self.sink)
+        initial_bookmarks = self.bookmarker.get_bookmarks(bookmarks_key) or {}
+        initial_bookmark = initial_bookmarks.get(self.bookmark_properties[0])
         bookmark: Optional[datetime] = initial_bookmark
         for file in sorted(self.file_dir.glob('*.csv')):
             last_modified: datetime = self.LAST_MODIFIED_MAP[file.name]
-            if (initial_bookmark is None) or (initial_bookmark is not None and last_modified > initial_bookmark):
+            if (not initial_bookmark) or (initial_bookmark and last_modified > initial_bookmark):
                 metadata = {'source': f'{self.file_dir.name}/{file.name}'}
                 self.update_schema(
                     stream=file.name,
@@ -55,35 +54,27 @@ class LineSource(Source):
                 if not self.file_handle.closed:
                     self.file_handle.close()
         if bookmark:
-            self.update_bookmark('_last_modified_at', bookmark.isoformat())
-            self.write_bookmark(bookmark_key)
+            self.bookmarks[self.bookmark_properties[0]] = bookmark.isoformat()
+            self.write_bookmark(bookmarks_key)
 
 
 class CsvSource(Source):
     def __init__(
             self,
-            name: str,
-            stream: str,
             sink: str,
-            bookmark_properties: List[str],
             bookmarker: Bookmarker,
             file_dir: Path,
             **kwargs: Any
     ) -> None:
-        super().__init__(name=name, stream=stream, bookmark_properties=bookmark_properties, **kwargs)
-        self.name = name
-        self.stream = stream
+        super().__init__(**kwargs)
         self.sink = sink
-        self.bookmark_properties = bookmark_properties
         self.bookmarker = bookmarker
         self.file_dir = file_dir
         self.file_handle: Optional[TextIO] = None
 
     def start(self) -> None:
-        bookmark_key = self.bookmarker.create_key(self.name, self.sink, self.stream)
-        bookmark: Dict[str, Any] = self.bookmarker.get_bookmark(bookmark_key) or {'birth_date': ''}
-        for bookmark_property in self.bookmark_properties:
-            self.update_bookmark(bookmark_property, bookmark.get(bookmark_property))
+        bookmark_key = self.bookmarker.get_key(source=self.name, stream=self.stream, sink=self.sink)
+        self.bookmarks = self.bookmarker.get_bookmarks(bookmark_key) or {'birth_date': ''}
         write_schema = True
         for file in sorted(self.file_dir.glob('*.csv')):
             source = f'{self.file_dir.name}/{file.name}'
@@ -104,11 +95,11 @@ class CsvSource(Source):
                     self.update_schema(schema=schema)
                     self.write_schema()
                     write_schema = False
-                should_write = any([row[p] > self.get_bookmark(p, '') for p in self.bookmark_properties])
+                should_write = any([row[p] > self.bookmarks.get(p, '') for p in self.bookmark_properties])
                 if should_write:
                     self.write_record({'_source': source, **row})
                     for bookmark_property in self.bookmark_properties:
-                        self.update_bookmark(bookmark_property, row[bookmark_property])
+                        self.bookmarks[bookmark_property] = row[bookmark_property]
             self.write_bookmark(bookmark_key)
             if not self.file_handle.closed:
                 self.file_handle.close()
@@ -136,7 +127,7 @@ class LineSink(Sink):
                 assert 'line' in msg.record, f'line property not found in {msg}'
                 self.file_handle.write(msg.record['line'] + '\n')
             elif isinstance(msg, BookmarkMessage):
-                self.bookmarker.set_bookmark(msg.key, msg.value)
+                self.bookmarker.set_bookmarks(msg.key, msg.bookmarks)
         if not self.file_handle.closed:
             self.file_handle.close()
 
@@ -162,30 +153,34 @@ class CsvSink(Sink):
                 assert self.writer is not None, 'writer is not initialized'
                 self.writer.writerow(msg.record)
             elif isinstance(msg, BookmarkMessage):
-                self.bookmarker.set_bookmark(msg.key, msg.value)
+                self.bookmarker.set_bookmarks(msg.key, msg.bookmarks)
         if not self.file_handle.closed:
             self.file_handle.close()
 
 
 def test_line_stream(tmpdir):
+    source = 'input'
+    stream = 'dogs'
+    sink = 'line'
     bookmarker = MemoryBookmarker()
     pipe = io.StringIO()
-    source = LineSource(
-        name='input',
-        sink='line',
+    line_source = LineSource(
+        name=source,
+        stream=stream,
+        sink=sink,
         bookmarker=bookmarker,
         file_dir=TEST_DATA_DIR / 'input',
         output_pipe=pipe)
 
-    sink = LineSink(
-        name='output',
+    line_sink = LineSink(
+        name=sink,
         bookmarker=bookmarker,
         temp_dir=tmpdir,
         input_pipe=pipe)
 
-    source.start()
+    line_source.start()
     pipe.seek(0)
-    sink.start()
+    line_sink.start()
 
     actual_messages = pipe.getvalue()
     expected_messages_path = Path(TEST_DATA_DIR, 'output', 'line_messages.txt')
@@ -198,32 +193,36 @@ def test_line_stream(tmpdir):
         actual_rows = file.read_text()
         assert actual_rows == expected_rows
 
-    actual_bookmark = bookmarker.get_bookmark('input:line')
+    key = bookmarker.get_key(source, stream, sink)
+    actual_bookmark = bookmarker.get_bookmarks(key)
     assert actual_bookmark == {'_last_modified_at': '2020-01-02T00:00:00'}
 
 
 def test_csv_stream(tmpdir):
+    source = 'input'
+    stream = 'dogs.csv'
+    sink = 'csv'
     bookmarker = MemoryBookmarker()
     pipe = io.StringIO()
-    source = CsvSource(
-        name='input',
-        stream='dogs.csv',
-        sink='csv',
+    csv_source = CsvSource(
+        name=source,
+        stream=stream,
+        sink=sink,
         file_dir=TEST_DATA_DIR / 'input',
         key_properties=['id'],
         bookmark_properties=['birth_date'],
         bookmarker=bookmarker,
         output_pipe=pipe)
 
-    sink = CsvSink(
-        name='output',
+    csv_sink = CsvSink(
+        name=sink,
         bookmarker=bookmarker,
         temp_dir=tmpdir,
         input_pipe=pipe)
 
-    source.start()
+    csv_source.start()
     pipe.seek(0)
-    sink.start()
+    csv_sink.start()
 
     actual_messages = pipe.getvalue()
     expected_messages_path = Path(TEST_DATA_DIR, 'output', 'csv_messages.txt')
@@ -236,19 +235,24 @@ def test_csv_stream(tmpdir):
 
     assert actual_rows == expected_rows
 
-    actual_bookmark = bookmarker.get_bookmark('input:dogs.csv:csv')
-    assert actual_bookmark == {'birth_date': '2020-01-04'}
+    key = bookmarker.get_key(source, stream, sink)
+    actual_bookmarks = bookmarker.get_bookmarks(key)
+    assert actual_bookmarks == {'birth_date': '2020-01-04'}
 
 
 def test_csv_stream_bookmark(tmpdir):
+    source = 'input'
+    stream = 'dogs.csv'
+    sink = 'csv'
     bookmarker = MemoryBookmarker()
     pipe = io.StringIO()
-    bookmarker.set_bookmark('input:dogs.csv:csv', {'birth_date': '2020-01-02'})
+    key = bookmarker.get_key(source, stream, sink)
+    bookmarker.set_bookmarks(key, {'birth_date': '2020-01-02'})
 
     source = CsvSource(
-        name='input',
-        stream='dogs.csv',
-        sink='csv',
+        name=source,
+        stream=stream,
+        sink=sink,
         file_dir=TEST_DATA_DIR / 'input',
         key_properties=['id'],
         bookmark_properties=['birth_date'],
@@ -265,8 +269,6 @@ def test_csv_stream_bookmark(tmpdir):
     pipe.seek(0)
     sink.start()
 
-    assert source.get_bookmark('birth_date') == '2020-01-04'
-
     actual_messages = pipe.getvalue()
     expected_messages_path = Path(TEST_DATA_DIR, 'output', 'csv_messages_bookmark.txt')
     expected_messages = expected_messages_path.read_text()
@@ -278,8 +280,8 @@ def test_csv_stream_bookmark(tmpdir):
 
     assert actual_rows == expected_rows
 
-    actual_bookmark = bookmarker.get_bookmark('input:dogs.csv:csv')
-    assert actual_bookmark == {'birth_date': '2020-01-04'}
+    actual_bookmarks = bookmarker.get_bookmarks(key)
+    assert actual_bookmarks == {'birth_date': '2020-01-04'}
 
 
 def test_csv_stream_error(tmpdir):

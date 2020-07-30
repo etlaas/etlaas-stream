@@ -1,5 +1,5 @@
 import redis
-from typing import Callable, Any, Optional
+from typing import Dict, Callable, Any, Optional
 
 from .bookmarker import Bookmarker
 from ..infrastructure import default_dumps, default_loads
@@ -20,13 +20,16 @@ class RedisBookmarker(Bookmarker):
             port=port,
             db=database,
             password=password)
-        self.loads = loads
-        self.dumps = dumps
+        self._loads = loads
+        self._dumps = dumps
 
-    def get_bookmark(self, key: str) -> Any:
+    def get_bookmarks(self, key: str) -> Dict[str, Any]:
         if (data := self.redis.get(key)) is not None:
-            return self.loads(data)
+            bookmarks: Dict[str, Any] = self._loads(data)
+        else:
+            bookmarks = {}
+        return bookmarks
 
-    def set_bookmark(self, key: str, value: Any) -> None:
-        data = self.dumps(value)
+    def set_bookmarks(self, key: str, bookmarks: Dict[str, Any]) -> None:
+        data = self._dumps(bookmarks)
         self.redis.set(key, data)
