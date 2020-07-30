@@ -5,7 +5,6 @@ from typing import Dict, List, Any
 class MessageType:
     SCHEMA = 'SCHEMA'
     RECORD = 'RECORD'
-    LINE = 'LINE'
     BOOKMARK = 'BOOKMARK'
     ERROR = 'ERROR'
 
@@ -55,21 +54,14 @@ class RecordMessage(Message):
 
 
 @dataclass
-class LineMessage(Message):
-    line: str
-
-    def __init__(self, line: str):
-        self.type = MessageType.LINE
-        self.line = line
-
-
-@dataclass
 class BookmarkMessage(Message):
-    bookmark: Any
+    key: str
+    value: Dict[str, Any]
 
-    def __init__(self, bookmark: Dict[str, Any]):
+    def __init__(self, key: str, value: Dict[str, Any]):
         self.type = MessageType.BOOKMARK
-        self.bookmark = bookmark
+        self.key = key
+        self.value = value
 
 
 @dataclass

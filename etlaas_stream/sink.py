@@ -1,14 +1,13 @@
 import fastjsonschema
 import logging
 import sys
-from typing import Iterator, Dict, List, Any, Optional, TextIO, Callable
+from typing import Iterator, Dict, Any, Optional, TextIO, Callable
 
-from .infrastructure import default_loads, default_dumps
+from .infrastructure import default_loads
 from .spec import (
     MessageType,
     SchemaMessage,
     RecordMessage,
-    LineMessage,
     BookmarkMessage,
     ErrorMessage,
     Message
@@ -20,30 +19,20 @@ class Sink:
             self,
             name: str,
             input_pipe: Optional[TextIO] = None,
-            loads: Callable[[str], Any] = default_loads,
-            dumps: Callable[[Any], str] = default_dumps
+            loads: Callable[[str], Any] = default_loads
     ) -> None:
-        self.name = name
-        self.input_pipe = input_pipe or sys.stdin
-        self.loads = loads
-        self.dumps = dumps
+        self._name = name
+        self._input_pipe = input_pipe or sys.stdin
+        self._loads = loads
 
-        self.source: Optional[str] = None
-        self.stream: Optional[str] = None
-        self.schema: Dict[str, Any] = {}
-        self.validate: Optional[Callable[[Any], None]] = None
-        self.key_properties: List[str] = []
-        self.bookmark_properties: List[str] = []
-        self.metadata: Dict[str, Any] = {}
-        self.bookmark: Dict[str, Any] = {}
-
-    def get_bookmark(self, bookmark_property: str) -> Any:
-        assert bookmark_property in self.bookmark_properties, f'{bookmark_property} not in bookmarks_properties'
-        return self.bookmark.get(bookmark_property)
+        self._source: Optional[str] = None
+        self._stream: Optional[str] = None
+        self._schema: Dict[str, Any] = {}
+        self._validate: Optional[Callable[[Any], None]] = None
 
     def deserialize_message(self, line: str) -> Message:
         try:
-            data: Dict[str, Any] = self.loads(line)
+            data: Dict[str, Any] = self._loads(line)
             msg_type = data.pop('type')
             if msg_type == MessageType.SCHEMA:
                 return SchemaMessage(
@@ -55,10 +44,8 @@ class Sink:
                     metadata=data['metadata'])
             elif msg_type == MessageType.RECORD:
                 return RecordMessage(record=data['record'])
-            elif msg_type == MessageType.LINE:
-                return LineMessage(line=data['line'])
             elif msg_type == MessageType.BOOKMARK:
-                return BookmarkMessage(bookmark=data['bookmark'])
+                return BookmarkMessage(key=data['key'], value=data['value'])
             elif msg_type == MessageType.ERROR:
                 return ErrorMessage(error=data['error'])
             else:
@@ -69,35 +56,28 @@ class Sink:
 
     def read(self) -> Iterator[Message]:
         while True:
-            line = self.input_pipe.readline()
+            line = self._input_pipe.readline()
             if line == "":
                 return
             else:
                 msg = self.deserialize_message(line)
                 if isinstance(msg, SchemaMessage):
-                    self.source = msg.source
-                    self.stream = msg.stream
-                    self.schema = msg.schema
-                    self.validate = fastjsonschema.compile(msg.schema)
-                    self.key_properties = msg.key_properties
-                    self.bookmark_properties = msg.bookmark_properties
-                    self.metadata = msg.metadata
+                    self._source = msg.source
+                    self._stream = msg.stream
+                    self._schema = msg.schema
+                    self._validate = fastjsonschema.compile(msg.schema)
                 elif isinstance(msg, RecordMessage):
-                    assert self.source is not None, 'source is not initialized'
-                    assert self.stream is not None, 'stream is not initialized'
-                    assert self.validate is not None, 'validate is not initialized'
+                    assert self._source is not None, 'source is not initialized'
+                    assert self._stream is not None, 'stream is not initialized'
+                    assert self._validate is not None, 'validate is not initialized'
                     try:
-                        self.validate(msg.record)
+                        self._validate(msg.record)
                     except Exception as exn:
                         logging.error(f'validation failed for {msg.record}')
                         raise exn
-                elif isinstance(msg, LineMessage):
-                    assert self.source is not None, 'source is not initialized'
-                    assert self.stream is not None, 'stream is not initialized'
                 elif isinstance(msg, BookmarkMessage):
-                    assert self.source is not None, 'source is not initialized'
-                    assert self.stream is not None, 'stream is not initialized'
-                    self.bookmark = msg.bookmark
+                    assert self._source is not None, 'source is not initialized'
+                    assert self._stream is not None, 'stream is not initialized'
                 elif isinstance(msg, ErrorMessage):
                     logging.error(msg.error)
                     raise RuntimeError(msg.error)

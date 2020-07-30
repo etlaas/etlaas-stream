@@ -1,23 +1,29 @@
-from typing import Any
+from typing import Any, Optional
 
 
 class Bookmarker:
-    def get_bookmark(self, source: str, stream: str, sink: str) -> Any:
+    """
+    A bookmark is the state of a source (and optionally a stream in that source) within a sink.
+    Bookmarker is an interface for methods to get and set the bookmarks.
+    """
+
+    @staticmethod
+    def create_key(source: str, sink: str, stream: Optional[str] = None) -> str:
+        stream_key = f':{stream}' if stream else ''
+        return f'{source}{stream_key}:{sink}'
+
+    def get_bookmark(self, key: str) -> Any:
         """
-        Get the source's stream bookmark for the target.
-        :param source: Name of the source.
-        :param stream: Name of the stream.
-        :param sink: Name of the sink.
+        Get the b
+        :key: Bookmark key.
         :return: bookmark
         """
         raise NotImplementedError()
 
-    def set_bookmark(self, source: str, stream: str, sink: str, value: Any) -> None:
+    def set_bookmark(self, key: str, value: Any) -> None:
         """
         Set the source's stream bookmark for the target.
-        :param source: Name of the source.
-        :param stream: Name of the stream.
-        :param sink: Name of the sink.
+        :param key: Bookmark key.
         :param value: Bookmark value.
         :return: None
         """

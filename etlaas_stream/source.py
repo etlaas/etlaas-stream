@@ -6,7 +6,6 @@ from .infrastructure import default_loads, default_dumps
 from .spec import (
     SchemaMessage,
     RecordMessage,
-    LineMessage,
     BookmarkMessage,
     ErrorMessage,
     Message
@@ -29,31 +28,29 @@ class Source:
             bookmark_properties: Optional[List[str]] = None,
             metadata: Optional[Dict[str, Any]] = None,
             output_pipe: Optional[TextIO] = None,
-            loads: Callable[[str], Any] = default_loads,
             dumps: Callable[[Any], str] = default_dumps
     ) -> None:
-        self.name = name
-        self.bookmark = bookmark or {}
-        self.stream = stream
-        self.schema = schema or DEFAULT_SCHEMA
-        self.key_properties = key_properties or []
-        self.bookmark_properties = bookmark_properties or []
-        self.metadata = metadata or {}
-        self.output_pipe = output_pipe or sys.stdout
-        self.loads = loads
-        self.dumps = dumps
+        self._name = name
+        self._bookmark = bookmark or {}
+        self._stream = stream
+        self._schema = schema or DEFAULT_SCHEMA
+        self._key_properties = key_properties or []
+        self._bookmark_properties = bookmark_properties or []
+        self._metadata = metadata or {}
+        self._output_pipe = output_pipe or sys.stdout
+        self._dumps = dumps
 
     def _write(self, msg: Message) -> None:
-        data = self.dumps(msg.to_dict()) + '\n'
-        self.output_pipe.write(data)
+        data = self._dumps(msg.to_dict()) + '\n'
+        self._output_pipe.write(data)
 
     def get_bookmark(self, bookmark_property: str, default_value: Optional[Any] = None) -> Any:
-        assert bookmark_property in self.bookmark_properties, f'{bookmark_property} not in bookmark_properties'
-        return self.bookmark.get(bookmark_property, default_value)
+        assert bookmark_property in self._bookmark_properties, f'{bookmark_property} not in bookmark_properties'
+        return self._bookmark.get(bookmark_property, default_value)
 
     def update_bookmark(self, bookmark_property: str, bookmark_value: Any) -> None:
-        assert bookmark_property in self.bookmark_properties, f'{bookmark_property} not in bookmark_properties'
-        self.bookmark[bookmark_property] = bookmark_value
+        assert bookmark_property in self._bookmark_properties, f'{bookmark_property} not in bookmark_properties'
+        self._bookmark[bookmark_property] = bookmark_value
 
     def update_schema(
             self,
@@ -63,21 +60,21 @@ class Source:
             bookmark_properties: Optional[List[str]] = None,
             metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        self.stream = stream or self.stream
-        self.schema = schema or self.schema
-        self.key_properties = key_properties or self.key_properties
-        self.bookmark_properties = bookmark_properties or self.bookmark_properties
-        self.metadata = metadata or self.metadata
+        self._stream = stream or self._stream
+        self._schema = schema or self._schema
+        self._key_properties = key_properties or self._key_properties
+        self._bookmark_properties = bookmark_properties or self._bookmark_properties
+        self._metadata = metadata or self._metadata
 
     def write_schema(self) -> None:
-        assert self.stream is not None, 'stream_name is undefined'
+        assert self._stream is not None, 'stream_name is undefined'
         msg = SchemaMessage(
-            source=self.name,
-            stream=self.stream,
-            schema=self.schema,
-            key_properties=self.key_properties,
-            bookmark_properties=self.bookmark_properties,
-            metadata=self.metadata)
+            source=self._name,
+            stream=self._stream,
+            schema=self._schema,
+            key_properties=self._key_properties,
+            bookmark_properties=self._bookmark_properties,
+            metadata=self._metadata)
         logging.info(f'writing schema {msg}')
         self._write(msg)
 
@@ -86,13 +83,8 @@ class Source:
         logging.debug(f'writing record {msg}')
         self._write(msg)
 
-    def write_line(self, line: str) -> None:
-        msg = LineMessage(line=line)
-        logging.debug(f'writing line: {msg}')
-        self._write(msg)
-
-    def write_bookmark(self) -> None:
-        msg = BookmarkMessage(bookmark=self.bookmark)
+    def write_bookmark(self, key: str) -> None:
+        msg = BookmarkMessage(key=key, value=self._bookmark)
         logging.info(f'writing bookmark {msg}')
         self._write(msg)
 
