@@ -21,13 +21,12 @@ class Sink:
             input_pipe: Optional[TextIO] = None,
             loads: Callable[[str], Any] = default_loads
     ) -> None:
-        self._name = name
+        self.name = name
+        self.source: Optional[str] = None
+        self.stream: Optional[str] = None
+        self.schema: Dict[str, Any] = {}
         self._input_pipe = input_pipe or sys.stdin
         self._loads = loads
-
-        self._source: Optional[str] = None
-        self._stream: Optional[str] = None
-        self._schema: Dict[str, Any] = {}
         self._validate: Optional[Callable[[Any], None]] = None
 
     def deserialize_message(self, line: str) -> Message:
@@ -45,7 +44,7 @@ class Sink:
             elif msg_type == MessageType.RECORD:
                 return RecordMessage(record=data['record'])
             elif msg_type == MessageType.BOOKMARK:
-                return BookmarkMessage(key=data['key'], value=data['value'])
+                return BookmarkMessage(key=data['key'], bookmarks=data['bookmarks'])
             elif msg_type == MessageType.ERROR:
                 return ErrorMessage(error=data['error'])
             else:
@@ -62,13 +61,13 @@ class Sink:
             else:
                 msg = self.deserialize_message(line)
                 if isinstance(msg, SchemaMessage):
-                    self._source = msg.source
-                    self._stream = msg.stream
-                    self._schema = msg.schema
+                    self.source = msg.source
+                    self.stream = msg.stream
+                    self.schema = msg.schema
                     self._validate = fastjsonschema.compile(msg.schema)
                 elif isinstance(msg, RecordMessage):
-                    assert self._source is not None, 'source is not initialized'
-                    assert self._stream is not None, 'stream is not initialized'
+                    assert self.source is not None, 'source is not initialized'
+                    assert self.stream is not None, 'stream is not initialized'
                     assert self._validate is not None, 'validate is not initialized'
                     try:
                         self._validate(msg.record)
@@ -76,8 +75,8 @@ class Sink:
                         logging.error(f'validation failed for {msg.record}')
                         raise exn
                 elif isinstance(msg, BookmarkMessage):
-                    assert self._source is not None, 'source is not initialized'
-                    assert self._stream is not None, 'stream is not initialized'
+                    assert self.source is not None, 'source is not initialized'
+                    assert self.stream is not None, 'stream is not initialized'
                 elif isinstance(msg, ErrorMessage):
                     logging.error(msg.error)
                     raise RuntimeError(msg.error)

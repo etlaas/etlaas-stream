@@ -12,13 +12,16 @@ class MemoryBookmarker(Bookmarker):
     ) -> None:
         self._loads = loads
         self._dumps = dumps
-        self._bookmarks: Dict[str, Any] = {}
+        self._data: Dict[str, Any] = {}
 
-    def get_bookmark(self, key: str) -> Any:
-        data = self._bookmarks.get(key)
+    def get_bookmarks(self, key: str) -> Dict[str, Any]:
+        data = self._data.get(key)
         if data:
-            return self._loads(data)
+            bookmarks: Dict[str, Any] = self._loads(data)
+        else:
+            bookmarks = {}
+        return bookmarks
 
-    def set_bookmark(self, key: str, value: Any) -> None:
-        data = self._dumps(value)
-        self._bookmarks[key] = data
+    def set_bookmarks(self, key: str, bookmarks: Dict[str, Any]) -> None:
+        data = self._dumps(bookmarks)
+        self._data[key] = data

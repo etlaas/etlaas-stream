@@ -2,7 +2,7 @@ import logging
 import sys
 from typing import Dict, List, Any, Optional, TextIO, Callable
 
-from .infrastructure import default_loads, default_dumps
+from .infrastructure import default_dumps
 from .spec import (
     SchemaMessage,
     RecordMessage,
@@ -21,8 +21,7 @@ class Source:
     def __init__(
             self,
             name: str,
-            bookmark: Optional[Dict[str, Any]] = None,
-            stream: Optional[str] = None,
+            stream: str,
             schema: Optional[Dict[str, Any]] = None,
             key_properties: Optional[List[str]] = None,
             bookmark_properties: Optional[List[str]] = None,
@@ -30,27 +29,19 @@ class Source:
             output_pipe: Optional[TextIO] = None,
             dumps: Callable[[Any], str] = default_dumps
     ) -> None:
-        self._name = name
-        self._bookmark = bookmark or {}
-        self._stream = stream
-        self._schema = schema or DEFAULT_SCHEMA
-        self._key_properties = key_properties or []
-        self._bookmark_properties = bookmark_properties or []
-        self._metadata = metadata or {}
+        self.name = name
+        self.stream = stream
+        self.schema = schema or DEFAULT_SCHEMA
+        self.key_properties = key_properties or []
+        self.bookmark_properties = bookmark_properties or []
+        self.metadata = metadata or {}
+        self.bookmarks: Dict[str, Any] = {}
         self._output_pipe = output_pipe or sys.stdout
         self._dumps = dumps
 
     def _write(self, msg: Message) -> None:
         data = self._dumps(msg.to_dict()) + '\n'
         self._output_pipe.write(data)
-
-    def get_bookmark(self, bookmark_property: str, default_value: Optional[Any] = None) -> Any:
-        assert bookmark_property in self._bookmark_properties, f'{bookmark_property} not in bookmark_properties'
-        return self._bookmark.get(bookmark_property, default_value)
-
-    def update_bookmark(self, bookmark_property: str, bookmark_value: Any) -> None:
-        assert bookmark_property in self._bookmark_properties, f'{bookmark_property} not in bookmark_properties'
-        self._bookmark[bookmark_property] = bookmark_value
 
     def update_schema(
             self,
@@ -60,21 +51,20 @@ class Source:
             bookmark_properties: Optional[List[str]] = None,
             metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        self._stream = stream or self._stream
-        self._schema = schema or self._schema
-        self._key_properties = key_properties or self._key_properties
-        self._bookmark_properties = bookmark_properties or self._bookmark_properties
-        self._metadata = metadata or self._metadata
+        self.stream = stream or self.stream
+        self.schema = schema or self.schema
+        self.key_properties = key_properties or self.key_properties
+        self.bookmark_properties = bookmark_properties or self.bookmark_properties
+        self.metadata = metadata or self.metadata
 
     def write_schema(self) -> None:
-        assert self._stream is not None, 'stream_name is undefined'
         msg = SchemaMessage(
-            source=self._name,
-            stream=self._stream,
-            schema=self._schema,
-            key_properties=self._key_properties,
-            bookmark_properties=self._bookmark_properties,
-            metadata=self._metadata)
+            source=self.name,
+            stream=self.stream,
+            schema=self.schema,
+            key_properties=self.key_properties,
+            bookmark_properties=self.bookmark_properties,
+            metadata=self.metadata)
         logging.info(f'writing schema {msg}')
         self._write(msg)
 
@@ -84,7 +74,7 @@ class Source:
         self._write(msg)
 
     def write_bookmark(self, key: str) -> None:
-        msg = BookmarkMessage(key=key, value=self._bookmark)
+        msg = BookmarkMessage(key=key, bookmarks=self.bookmarks)
         logging.info(f'writing bookmark {msg}')
         self._write(msg)
 

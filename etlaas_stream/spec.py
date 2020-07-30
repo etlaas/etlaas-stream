@@ -56,12 +56,12 @@ class RecordMessage(Message):
 @dataclass
 class BookmarkMessage(Message):
     key: str
-    value: Dict[str, Any]
+    bookmarks: Dict[str, Any]
 
-    def __init__(self, key: str, value: Dict[str, Any]):
+    def __init__(self, key: str, bookmarks: Dict[str, Any]):
         self.type = MessageType.BOOKMARK
         self.key = key
-        self.value = value
+        self.bookmarks = bookmarks
 
 
 @dataclass
