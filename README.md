@@ -1,5 +1,8 @@
-# Stream
+# ETLAAS Stream
 Convenience classes for working with streams of data.
+
+> NOTE: this library is still in early stages so expect
+breaking changes. It is recommended to pin the version.
 
 ## Setup
 1. Install Python.
