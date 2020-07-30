@@ -35,7 +35,7 @@ class LineSource(Source):
         bookmark_key = self.bookmarker.create_key(self.name, self.sink)
         initial_bookmark: Optional[datetime] = self.bookmarker.get_bookmark(bookmark_key)
         bookmark: Optional[datetime] = initial_bookmark
-        for file in self.file_dir.glob('*.csv'):
+        for file in sorted(self.file_dir.glob('*.csv')):
             last_modified: datetime = self.LAST_MODIFIED_MAP[file.name]
             if (initial_bookmark is None) or (initial_bookmark is not None and last_modified > initial_bookmark):
                 metadata = {'source': f'{self.file_dir.name}/{file.name}'}
@@ -85,7 +85,7 @@ class CsvSource(Source):
         for bookmark_property in self.bookmark_properties:
             self.update_bookmark(bookmark_property, bookmark.get(bookmark_property))
         write_schema = True
-        for file in self.file_dir.glob('*.csv'):
+        for file in sorted(self.file_dir.glob('*.csv')):
             source = f'{self.file_dir.name}/{file.name}'
             if self.file_handle is not None:
                 if not self.file_handle.closed:
