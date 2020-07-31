@@ -4,6 +4,7 @@ from typing import Any, Dict
 class Bookmarker:
     """
     A bookmark is the state of a source's stream for a particular sink.
+    There can be multiple bookmark properties for each stream.
     Bookmarker is an interface with methods to get and set the bookmarks.
     """
 

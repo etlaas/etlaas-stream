@@ -6,7 +6,7 @@ from .infrastructure import default_dumps
 from .spec import (
     SchemaMessage,
     RecordMessage,
-    BookmarkMessage,
+    BookmarksMessage,
     ErrorMessage,
     Message
 )
@@ -20,22 +20,11 @@ DEFAULT_SCHEMA = {
 class Source:
     def __init__(
             self,
-            name: str,
-            stream: str,
-            schema: Optional[Dict[str, Any]] = None,
-            key_properties: Optional[List[str]] = None,
-            bookmark_properties: Optional[List[str]] = None,
-            metadata: Optional[Dict[str, Any]] = None,
+            bookmarks: Optional[Dict[str, Any]] = None,
             output_pipe: Optional[TextIO] = None,
             dumps: Callable[[Any], str] = default_dumps
     ) -> None:
-        self.name = name
-        self.stream = stream
-        self.schema = schema or DEFAULT_SCHEMA
-        self.key_properties = key_properties or []
-        self.bookmark_properties = bookmark_properties or []
-        self.metadata = metadata or {}
-        self.bookmarks: Dict[str, Any] = {}
+        self.bookmarks: Dict[str, Any] = bookmarks or {}
         self._output_pipe = output_pipe or sys.stdout
         self._dumps = dumps
 
@@ -43,28 +32,22 @@ class Source:
         data = self._dumps(msg.to_dict()) + '\n'
         self._output_pipe.write(data)
 
-    def update_schema(
+    def write_schema(
             self,
-            stream: Optional[str] = None,
+            source: str,
+            stream: str,
             schema: Optional[Dict[str, Any]] = None,
             key_properties: Optional[List[str]] = None,
             bookmark_properties: Optional[List[str]] = None,
             metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        self.stream = stream or self.stream
-        self.schema = schema or self.schema
-        self.key_properties = key_properties or self.key_properties
-        self.bookmark_properties = bookmark_properties or self.bookmark_properties
-        self.metadata = metadata or self.metadata
-
-    def write_schema(self) -> None:
         msg = SchemaMessage(
-            source=self.name,
-            stream=self.stream,
-            schema=self.schema,
-            key_properties=self.key_properties,
-            bookmark_properties=self.bookmark_properties,
-            metadata=self.metadata)
+            source=source,
+            stream=stream,
+            schema=schema or DEFAULT_SCHEMA,
+            key_properties=key_properties or [],
+            bookmark_properties=bookmark_properties or [],
+            metadata=metadata or {})
         logging.info(f'writing schema {msg}')
         self._write(msg)
 
@@ -73,8 +56,11 @@ class Source:
         logging.debug(f'writing record {msg}')
         self._write(msg)
 
-    def write_bookmark(self, key: str) -> None:
-        msg = BookmarkMessage(key=key, bookmarks=self.bookmarks)
+    def write_bookmarks(self, source: str, stream: str) -> None:
+        msg = BookmarksMessage(
+            source=source,
+            stream=stream,
+            bookmarks=self.bookmarks)
         logging.info(f'writing bookmark {msg}')
         self._write(msg)
 
