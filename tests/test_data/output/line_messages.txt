@@ -6,4 +6,4 @@
 {"type": "RECORD", "record": {"_last_modified_at": "2020-01-02T00:00:00", "line": "id,name,species,color,birth_date"}}
 {"type": "RECORD", "record": {"_last_modified_at": "2020-01-02T00:00:00", "line": "3,Minnie,Shih tzu,white,2020-01-03"}}
 {"type": "RECORD", "record": {"_last_modified_at": "2020-01-02T00:00:00", "line": "4,Buck,Golden Retriever,gold,2020-01-04"}}
-{"type": "BOOKMARK", "key": "input:dogs:line", "bookmarks": {"_last_modified_at": "2020-01-02T00:00:00"}}
+{"type": "BOOKMARKS", "source": "input", "stream": "dogs", "bookmarks": {"_last_modified_at": "2020-01-02T00:00:00"}}
